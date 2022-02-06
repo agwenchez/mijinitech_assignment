@@ -1,14 +1,15 @@
 # pull node image
-FROM node:14-alpine
+FROM node:16-alpine
 
 # create a working directory with a non-root user
 RUN mkdir -p /app/node_modules && chown -R node:node /app
+
 
 # describe working directory 
 WORKDIR /app
 
 # copy and cache package.json file
-COPY package*.json ./
+COPY package.json ./
 
 # define the non-root user
 USER node

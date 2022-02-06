@@ -5,7 +5,7 @@ const multer = require("multer");
 const crypto = require("crypto");
 const photoMiddleware = require("../middlewares/photoMiddleware");
 const cron = require("node-cron");
-const { default: axios } = require("axios");
+const  axios = require("axios");
 
 router.get("/battery_periodic", async (req, res) => {
   try {
@@ -13,16 +13,16 @@ router.get("/battery_periodic", async (req, res) => {
     return res.status(200).send(drones.rows);
   } catch (error) {
     console.log(error);
-    res.status(500).send(`An error occured: ${error}`);
+    res.status(500).json({"error occured":`${error}`});
   }
 });
 
 // task schedular(every min)
-cron.schedule("* * * * *", () => {
-  // battery_level()
+cron.schedule("*/10 * * * * *", () => {
   (async()=>{
-    const bat_level = await axios.get('http://localhost:6000/drones/battery_periodic')
-    console.log("running a task every 10 seconds", bat_level.data.map(item => item.battery_capacity));
+
+    const bat_level = await axios.get('http://localhost:5500/drones/battery_periodic')
+    console.log("Battery level after every min", bat_level.data.map(item => item.battery_capacity));
   })()
 
 });
@@ -63,6 +63,7 @@ const upload = multer({
   },
 }).single("image");
 
+
 // register drones
 router.post("/register", async (req, res) => {
   const { serial_number, model, weight_limit, battery_capacity, state } =
@@ -82,7 +83,7 @@ router.post("/register", async (req, res) => {
         });
   } catch (error) {
     console.log(error);
-    res.status(500).send(`An error occured: ${error}`);
+    res.status(500).json({"error occured":`${error}`});
   }
 });
 
@@ -93,22 +94,29 @@ router.post(
   async (req, res) => {
     const { name, weight, code } = req.body;
 
-  
-
     try {
-      const battery_level = await db.query("SELCT * FROM drones WHERE serial_number = $1", [req.params.serial_number])
-      
-      const medication = await db.query(
-        "INSERT INTO medications(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
-        [name, weight, code, req.image, req.params.serial_number]
-      );
 
-      // console.log("Loaded medication", medication.rows[0]);
-      medication.rows.length > 0 &&
-        res.status(200).send({ response: "Medication loaded successfully" });
+      const drone = await db.query('SELECT * drones WHERE serial_number = $1', [req.params.serial_number])
+      // validation check on medication schema
+      const regex = /[A-Za-z0-9\-\_]+/ ;
+      // console.log("Regex test for name",regex.test(name))
+
+      if(regex.test(name) === true ){
+        const medication = await db.query(
+          "INSERT INTO medications(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
+          [name, weight, code, req.image, req.params.serial_number]
+        );
+  
+        // console.log("Loaded medication", medication.rows[0]);
+        medication.rows.length > 0 &&
+          res.status(200).json({ "response": "Medication loaded successfully" });
+      }else{
+        return res.status(500).send({"error message":"Either name or code is not correctly typed"})
+      }
+     
     } catch (error) {
       console.log(error);
-      res.status(500).send(`An error occured: ${error}`);
+      res.status(500).json({"error occured":`${error}`});
     }
   }
 );
@@ -124,7 +132,7 @@ router.get("/check_loaded/:serial_number", async (req, res) => {
     res.status(200).json({ response: loaded.rows });
   } catch (error) {
     console.log(error);
-    res.status(500).send(`An error occured: ${error}`);
+    res.status(500).json({"error occured":`${error}`});
   }
 });
 
@@ -139,7 +147,7 @@ router.get("/check_available", async (req, res) => {
     res.status(200).json({ response: available.rows[0] });
   } catch (error) {
     console.log(error);
-    res.status(500).send(`An error occured: ${error}`);
+    res.status(500).json({"error occured":`${error}`});
   }
 });
 
@@ -155,7 +163,7 @@ router.get("/check_battery/:serial_number", async (req, res) => {
     res.status(200).json({ response: battery_level.rows[0].battery_capacity });
   } catch (error) {
     console.log(error);
-    res.status(500).send(`An error occured: ${error}`);
+    res.status(500).json({"error occured":`${error}`});
   }
 });
 

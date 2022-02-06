@@ -1,4 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE drones(
  serial_number VARCHAR(100) PRIMARY KEY,
