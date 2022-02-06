@@ -4,7 +4,7 @@ services:
   server:
     build: .
     ports:
-      - '6000:6000'
+      - '5000:6000'
     depends_on: 
       - db
     restart: unless-stopped
@@ -12,7 +12,7 @@ services:
     image: 'postgres:13-alpine'
     restart: always
     ports: 
-      - '5432:5432'
+      - '6500:5432'
     environment:
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD:  ${DB_PASSWORD}
