@@ -9,7 +9,7 @@ app.use(express.json())
 
 
 app.get('/', (req,res)=>{
-    res.status(200).send("Drones services API works fine")
+    res.status(200).send("Drones services works fine")
 })
 // import routes
 app.use('/drones', require('./routes/drones'))
