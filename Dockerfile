@@ -9,7 +9,7 @@ RUN mkdir -p /app/node_modules && chown -R node:node /app
 WORKDIR /app
 
 # copy and cache package.json file
-COPY package.json ./
+COPY package*.json ./
 
 # define the non-root user
 USER node

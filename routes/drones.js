@@ -68,6 +68,7 @@ const upload = multer({
 router.post("/register", async (req, res) => {
   const { serial_number, model, weight_limit, battery_capacity, state } =
     req.body;
+
   try {
     const drone = await db.query(
       "INSERT INTO drones(serial_number, model, weight_limit, battery_capacity, state) VALUES($1,$2,$3,$4,$5) RETURNING *",
@@ -95,23 +96,31 @@ router.post(
     const { name, weight, code } = req.body;
 
     try {
-
-      const drone = await db.query('SELECT * drones WHERE serial_number = $1', [req.params.serial_number])
+      // drone info
+      const drone = await db.query('SELECT * from drones WHERE serial_number = $1', [req.params.serial_number])
+      
       // validation check on medication schema
       const regex = /[A-Za-z0-9\-\_]+/ ;
-      // console.log("Regex test for name",regex.test(name))
 
-      if(regex.test(name) === true ){
-        const medication = await db.query(
-          "INSERT INTO medications(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
-          [name, weight, code, req.image, req.params.serial_number]
-        );
-  
-        // console.log("Loaded medication", medication.rows[0]);
-        medication.rows.length > 0 &&
-          res.status(200).json({ "response": "Medication loaded successfully" });
+      if(regex.test(name) === true){
+        
+        // check weight limit if exceeded
+        if(weight < drone.rows[0].weight_limit === true ){
+          const medication = await db.query(
+            "INSERT INTO medications(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
+            [name, weight, code, req.image, req.params.serial_number]
+          );
+    
+          // console.log("Loaded medication", medication.rows[0]);
+          medication.rows.length > 0 &&
+            res.status(200).json({ "response": `Medication with name: ${name} and code: ${code} loaded to drone: ${req.params.serial_number} successfully` });
+        }else{
+          return res.status(500).send({"error message":`Maximum weight limit of ${drone.rows[0].weight_limit} gr has been exceeded`})
+        }
+
+       
       }else{
-        return res.status(500).send({"error message":"Either name or code is not correctly typed"})
+          return res.status(500).send({"error message":"Name is not correctly typed"})
       }
      
     } catch (error) {
@@ -154,7 +163,6 @@ router.get("/check_available", async (req, res) => {
 // check battery level for a given drone
 router.get("/check_battery/:serial_number", async (req, res) => {
   try {
-    // join drone and medication table
     const battery_level = await db.query(
       "SELECT * FROM drones WHERE serial_number = $1",
       [req.params.serial_number]
@@ -166,5 +174,35 @@ router.get("/check_battery/:serial_number", async (req, res) => {
     res.status(500).json({"error occured":`${error}`});
   }
 });
+
+// prevent drone from being in LOADING state if battery is below 25%
+router.put('/update/:serial_number', async(req,res)=>{
+    const { model, weight_limit, battery_capacity, state } =
+    req.body;
+
+
+  try {
+
+    // check f state is loading and prevent being updated
+    if(state === "LOADING"){
+
+      if(battery_capacity > '25%'){
+        const update_drone = await db.query("UPDATE drones SET serial_number = $1, model = $2, weight_limit = $3, battery_capacity = $4, state = $5", [req.params.serial_number, model, weight_limit, battery_capacity, state ])
+     
+        return res.status(200).json({"response":`Drone with serial number:${req.params.serial_number} updated successfully`})
+      }else{
+        return res.status(500).json({"error message":`Battery level is below 25%, state can't be updated to loading`})
+      }
+    }else{
+
+      const update_drone = await db.query("UPDATE drones SET serial_number = $1, model = $2, weight_limit = $3, battery_capacity = $4, state = $5", [ req.params.serial_number, model, weight_limit, battery_capacity, state ])
+      return res.status(200).json({"response":`Drone with serial number:${req.params.serial_number} updated successfully`})
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({"error occured":`${error}`});
+  }
+})
 
 module.exports = router;
