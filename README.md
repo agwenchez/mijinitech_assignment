@@ -1,18 +1,18 @@
 
 
-## Build a docker container
-# docker-compose up --build
+# Build a docker container
+## docker-compose up --build
 
-## Run locally on docker
+# Run locally on docker
 http://localhost:8080
 
-## Installing locallly
-cd services/drones && npm install
+# Installing locallly
+npm install
 
-## Run Locally
+# Run Locally
 npm run dev
 
-## Access DB on container
+# Access DB on container
 psql -U agwenchez -h localhost -d mijinitech -p 6500
 
 
