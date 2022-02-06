@@ -9,7 +9,7 @@ CREATE TABLE drones(
 );
 
 
-CREATE TABLE medication(
+CREATE TABLE medications(
  name VARCHAR(100) NOT NULL,
  weight VARCHAR(10) NOT NULL,
  code VARCHAR(50) PRIMARY KEY,

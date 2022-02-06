@@ -3,7 +3,7 @@ const app = express()
 const logger = require('morgan')
 app.use(logger('dev'))
 require('dotenv').config();
-const PORT = process.env.PORT || 4000
+const PORT = process.env.PORT || 6000
 app.use(express.json())
 
 

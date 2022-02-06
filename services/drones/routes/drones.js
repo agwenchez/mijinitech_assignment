@@ -3,7 +3,8 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const multer = require('multer')
-const crypto = require('crypto')
+const crypto = require('crypto');
+const photoMiddleware = require("../middlewares/photoMiddleware");
 
 const storage = multer.diskStorage({
   destination: '../public/assets',
@@ -19,6 +20,21 @@ const storage = multer.diskStorage({
       }
   }
 });
+
+const upload = multer({
+  storage: storage,
+  limits: { fieldSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+      if (file.mimetype == "image/png" || file.mimetype == "image/jpg" || file.mimetype == "image/jpeg") {
+          cb(null, true);
+      } else {
+          cb(null, false);
+          return cb(('Only .png, .jpg and .jpeg format allowed!'));
+      }
+  }
+}).single('image')
+
+
 
 // test route
 router.get("/all", async (req, res) => {
@@ -50,13 +66,14 @@ router.post("/register", async (req, res) => {
 });
 
 // load drone with medication items
-router.post("/load/:serial_number", async (req, res) => {
-  const { name, weight, code, image } = req.body;
+router.post("/load/:serial_number", [upload,photoMiddleware], async (req, res) => {
+  const { name, weight, code } = req.body;
 
+  console.log("Image", req.image)
   try {
     const medication = await db.query(
-      "INSERT INTO medication(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
-      [name, weight, code, image, req.params.serial_number]
+      "INSERT INTO medications(name, weight, code, image, drone) VALUES($1,$2,$3,$4,$5) RETURNING *",
+      [name, weight, code, req.image, req.params.serial_number]
     );
 
     console.log("Loaded medication", medication.rows[0]);
